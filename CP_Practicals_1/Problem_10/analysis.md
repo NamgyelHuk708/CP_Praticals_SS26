@@ -60,5 +60,4 @@ Initially, I thought about using recursion with memoization, which would also wo
 Program execution showing subset count with target sum:
 
 ![alt text](image.png)
-
 The program correctly outputs 3 for input array [1, 2, 3, 3] and target sum 6, representing the subsets: [1, 2, 3], [1, 2, 3], and [3, 3].
