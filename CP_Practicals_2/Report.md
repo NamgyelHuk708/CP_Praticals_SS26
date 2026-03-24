@@ -29,6 +29,9 @@ As shown in the complexity table above: DP table of size 2^N × N booleans.
 ### e. Reflection
 This problem deepened my understanding of Hamiltonian Cycle problems and how bitmask DP elegantly encodes subset states. Initially, I considered checking all N! permutations, but that is infeasible for N=20. Fixing friend 0 as the anchor to eliminate rotational duplicates was a key insight that reduced the search space. The bitwise AND check for compatibility made the allergy comparison both fast and clean.
 
+### f. Sample Output
+![Problem 1 Output](image/dinner.png)
+
 ---
 
 ## Problem 2: Maximum AND Subarray
@@ -54,6 +57,9 @@ As shown in the complexity table above: Only the input array and a constant numb
 
 ### e. Reflection
 This problem taught me how to apply a greedy bitwise strategy. I initially tried checking all subarrays of length K and computing their AND, which is O(NK) and times out for large inputs. The key insight is that bits are independent in terms of their contribution to the AND result, so we can decide greedily from the most significant bit. The feasibility check collapses to a simple consecutive-run scan, making the solution very efficient.
+
+### f. Sample Output
+![Problem 2 Output](image/maxand.png)
 
 ---
 
@@ -83,6 +89,9 @@ As shown in the complexity table above: The deque holds at most K indices at any
 ### e. Reflection
 This problem was my first encounter with the monotonic deque technique. A brute force O(NK) solution works for small inputs but fails at scale. The key insight is that if element A[j] is smaller than A[i] and j < i, then A[j] will never be the window maximum for any window that contains A[i]. Discarding it eagerly from the deque is safe and gives us the O(N) solution. The deque essentially maintains a decreasing sequence of useful candidates.
 
+### f. Sample Output
+![Problem 3 Output](image/slidemax.png)
+
 ---
 
 ## Problem 4: Maximum in Sliding Window with Updates
@@ -108,6 +117,9 @@ As shown in the complexity table above: Segment tree uses 4*N nodes in the backi
 
 ### e. Reflection
 This problem taught me when to upgrade from a specialized data structure (deque) to a more general one (segment tree). The monotonic deque is faster for static arrays but cannot efficiently handle updates. Building the segment tree made me appreciate how a binary tree structure enables both updates and range queries in logarithmic time. The pattern of 'build once, query and update many times' is a foundational competitive programming paradigm.
+
+### f. Sample Output
+![Problem 4 Output](image/slideupdate.png)
 
 ---
 
@@ -137,6 +149,9 @@ As shown in the complexity table above: Adjacency list stores M edges; distance 
 ### e. Reflection
 Implementing Dijkstra reinforced my understanding of greedy shortest-path algorithms. The use of a priority queue to always process the closest unvisited node ensures optimality. I learned that the 'lazy deletion' trick (checking if d > dist[u] before processing) is simpler than maintaining a decrease-key structure and works efficiently for competitive programming. Handling the -1 case by checking if dist[N] remains at LLONG_MAX is an important edge case.
 
+### f. Sample Output
+![Problem 5a Output](image/latency.png)
+
 ---
 
 ## Problem 5b: Time-Dependent Shortest Path
@@ -163,6 +178,9 @@ As shown in the complexity table above: Adjacency list and distance array only.
 
 ### e. Reflection
 This variant taught me how to verify whether Dijkstra is applicable to non-standard edge weights. The critical insight is the FIFO property: since a >= 0, the function f(t) = a*t + b is non-decreasing, meaning departing later never helps. Without this, Dijkstra could produce incorrect results. Floating-point precision was also a challenge; using double and comparing with a small epsilon (1e-9) for the stale-entry check ensured correctness.
+
+### f. Sample Output
+![Problem 5b Output](image/timepath.png)
 
 ---
 
@@ -192,6 +210,9 @@ As shown in the complexity table above: DP table of size N × (K+1).
 
 ### e. Reflection
 This problem taught me how to model optimization problems with multiple constraints using 2D DP. The key insight is framing the state as maximizing remaining coins rather than directly minimizing time, which simplifies transition logic. I also learned to scan the final row in order of skip count (j = 0, 1, ..., K) so the first valid answer corresponds to the minimum extra time incurred. Handling the -1 case (no path exists even with all skips) required checking whether all states at booth N remain at -infinity.
+
+### f. Sample Output
+![Problem 6 Output](image/toll.png)
 
 ---
 
