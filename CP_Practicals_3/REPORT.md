@@ -31,7 +31,7 @@ The algorithm executes three nested loops iterating from 0 to n-1, resulting in 
 
 **Space Complexity: O(n²)**
 
-The primary space requirement comes from the distance matrix, which is a two-dimensional array of size n × n. Additionally, auxiliary variables for loop counters and temporary values require constant space O(1). Therefore, the overall space complexity is dominated by the distance matrix, resulting in O(n²) space usage.
+The dominant space requirement is the n×n distance matrix. Auxiliary variables require O(1) space, resulting in O(n²) overall space complexity.
 
 ### e. Reflection on Implementation and Learning
 
@@ -57,51 +57,33 @@ Johnson's algorithm also solves the all-pairs shortest path problem but optimize
 
 ### b. Algorithm Explanation
 
-Johnson's algorithm elegantly combines two classic shortest-path algorithms through a reweighting technique. The algorithm operates in five main phases:
+Johnson's algorithm combines Bellman-Ford and Dijkstra through an edge reweighting technique. The algorithm consists of five phases:
 
-**Phase 1: Auxiliary Vertex Addition**
-An auxiliary vertex is introduced with zero-weight edges connecting to all existing vertices in the graph.
+**Phase 1:** Add an auxiliary vertex with zero-weight edges to all vertices.
 
-**Phase 2: Bellman-Ford Execution**
-Bellman-Ford algorithm runs from the auxiliary vertex to compute a potential value h[v] for each vertex v. These potential values represent the shortest distance from the auxiliary vertex to each vertex.
+**Phase 2:** Run Bellman-Ford from the auxiliary vertex to compute potential values h[v] for each vertex.
 
-**Phase 3: Edge Reweighting**
-Each original edge (u, v) with weight w is reweighted to: `new_weight = w + h[u] - h[v]`. This transformation ensures all edge weights become non-negative while preserving shortest path relationships. The reweighting formula is mathematically proven to maintain shortest path properties through the triangle inequality.
+**Phase 3:** Reweight edges using the formula: `new_weight = w + h[u] - h[v]`. This eliminates negative weights while preserving shortest path relationships.
 
-**Phase 4: Dijkstra Execution**
-Dijkstra's algorithm runs from each vertex on the reweighted graph. Since all weights are now non-negative, Dijkstra's efficient algorithm can be applied.
+**Phase 4:** Run Dijkstra from each vertex on the reweighted graph.
 
-**Phase 5: Distance Recovery**
-The computed distances are converted back to original weight space by reversing the reweighting formula: `original_distance = reweighted_distance + h[destination] - h[source]`.
-
-**Key Advantage:** The reweighting mechanism is elegant because it fundamentally transforms the graph without changing the shortest paths themselves, only their representation.
+**Phase 5:** Convert distances back to original weights using: `original_distance = reweighted_distance + h[v] - h[u]`.
 
 ### c. Time Complexity Analysis
 
 **Time Complexity: O(V² log V + VE)**
 
-Breaking down the complexity:
-- Bellman-Ford execution: O(VE)
-- Dijkstra execution from each of V vertices: V × O(E log V) = O(VE log V)
-- Total: O(VE + VE log V) = O(VE log V)
-
-However, in the standard analysis with V iterations of Dijkstra's algorithm implemented with binary heaps, the complexity is approximately O(V² log V + VE). For sparse graphs where E is close to V, this becomes approximately O(V² log V), which is significantly better than Floyd-Warshall's O(V³) complexity.
+Bellman-Ford runs in O(VE), and Dijkstra runs V times in O(E log V) each. For sparse graphs where E is close to V, this approaches O(V² log V), significantly better than Floyd-Warshall's O(V³).
 
 ### d. Space Complexity Analysis
 
 **Space Complexity: O(VE)**
 
-The space usage consists of:
-- Adjacency list representation of the graph: O(V + E)
-- Potential values array h: O(V)
-- Distance matrices and priority queues used during Dijkstra executions: O(V)
-- The reweighted adjacency list can have up to E edges: O(E)
-
-The overall space complexity is O(V + E), though with careful implementation storing distance matrices for all vertices simultaneously requires O(V²) space.
+Space is required for adjacency list representation O(V+E), potential values array O(V), and priority queues during Dijkstra execution O(V), totaling O(VE).
 
 ### e. Reflection on Implementation and Learning
 
-Implementing Johnson's algorithm revealed sophisticated algorithmic design patterns. The reweighting technique initially appeared confusing, but understanding the mathematical justification through the triangle inequality proved enlightening. The key insight was recognizing that reweighting doesn't change shortest paths, merely their numerical representation. This implementation taught the value of combining algorithms to leverage each algorithm's strengths: using Bellman-Ford's ability to handle negative weights for preprocessing, then exploiting Dijkstra's superior efficiency. Debugging the algorithm required careful attention to the mathematical transformations between weight spaces. Ultimately, Johnson's algorithm demonstrated how clever algorithmic engineering can significantly improve performance for specific input characteristics (sparse graphs), a principle applicable across computer science.
+The implementation revealed the power of combining algorithms strategically. The reweighting technique was initially confusing but became clear through understanding the mathematical foundation. The programmer discovered that Bellman-Ford's ability to handle negative weights could preprocess the graph, enabling Dijkstra's superior efficiency. This approach demonstrated how clever algorithmic engineering can optimize performance for specific input characteristics like sparse graphs. The key learning was recognizing that reweighting preserves shortest paths while transforming their numerical representation.
 
 ### Screenshot
 
@@ -123,53 +105,36 @@ Borůvka's algorithm constructs a minimum spanning tree (MST) of a weighted undi
 
 ### b. Algorithm Explanation
 
-Borůvka's algorithm builds the MST through a greedy approach by repeatedly selecting minimum-weight edges that connect different components:
+Borůvka's algorithm constructs an MST through a greedy approach by repeatedly selecting minimum-weight edges connecting different components.
 
 **Algorithm Steps:**
 
-1. Initialize each vertex as its own separate component or set.
+1. Initialize each vertex as a separate component.
 
-2. Repeat until only one component remains (when n-1 edges have been added):
-   - For each current component, identify the minimum-weight edge that connects this component to any different component
-   - Mark all these minimum-weight edges for inclusion
-   - Unite the components connected by each marked edge using a Union-Find data structure
+2. Repeat until one component remains:
+   - For each component, find the minimum-weight edge connecting to another component.
+   - Include all such minimum edges in the MST.
+   - Merge components using Union-Find.
 
-3. The collected edges form the minimum spanning tree.
-
-**Union-Find Data Structure:**
-Union-Find (also called Disjoint Set Union) efficiently tracks which vertices belong to which component:
-- `find(x)` operation returns the representative (root) of the component containing vertex x
-- `unite(x, y)` operation merges the components containing vertices x and y
-- Path compression and union by rank optimizations ensure near-constant time operations
-
-**Key Insight:** By always selecting the minimum-weight edge from each component to other components, and gradually merging components, Borůvka's algorithm guarantees finding the minimum spanning tree. This greedy approach works because adding the minimum-weight edge from a component cannot be improved by any other choice.
+**Union-Find:** Efficiently tracks components with two operations:
+- `find(x)`: Returns the representative of the component containing x.
+- `unite(x, y)`: Merges the components containing x and y.
 
 ### c. Time Complexity Analysis
 
 **Time Complexity: O(E log V)**
 
-The complexity analysis:
-- The algorithm performs at most log V iterations of the outer loop (halving components each iteration in the worst case)
-- Each iteration examines all E edges once: O(E)
-- Union-Find operations with path compression and union by rank execute in nearly O(1) amortized time
-- Total iterations × edge examination: O(E log V)
-
-For dense graphs where E approaches V², this becomes O(V² log V). For sparse graphs where E approaches V, this becomes O(V log V).
+The algorithm performs at most log V iterations (components halve each iteration). Each iteration examines all E edges, and Union-Find operations execute in nearly O(1) amortized time. Total: O(E log V).
 
 ### d. Space Complexity Analysis
 
 **Space Complexity: O(V + E)**
 
-Space requirements include:
-- Adjacency list or edge list representation: O(V + E)
-- Union-Find data structure with parent and rank arrays: O(V)
-- Temporary arrays for tracking cheapest edges from each component: O(V)
-
-The overall space complexity is O(V + E), which is linear in the input size, making Borůvka's algorithm very space-efficient.
+Space is required for edge list representation O(E), Union-Find structure O(V), and temporary tracking arrays O(V), totaling O(V + E) linear space.
 
 ### e. Reflection on Implementation and Learning
 
-Implementing Borůvka's algorithm provided deep understanding of greedy algorithms and the importance of efficient data structures. The Union-Find implementation, particularly understanding path compression and union by rank optimizations, revealed how subtle implementation details can dramatically affect performance. Initially, implementing the algorithm without these optimizations resulted in slower performance, but adding them achieved near-linear time behavior. The challenge of correctly identifying the minimum-weight edge from each component in each iteration required careful tracking of component representatives. This implementation demonstrated that sometimes the most efficient algorithms achieve their performance through careful engineering rather than clever ideas alone. The comparison with Kruskal's algorithm (sorting all edges and adding them greedily) highlighted how different algorithmic approaches can achieve the same goal with varying efficiency characteristics.
+The implementation demonstrated the importance of efficient data structures. Union-Find with path compression and union by rank optimizations revealed how subtle implementation details dramatically affect performance. The programmer discovered that identifying minimum-weight edges from each component required careful tracking of representatives. This implementation taught that algorithm efficiency often comes through careful engineering rather than algorithmic innovation alone. Comparing with Kruskal's algorithm highlighted how different greedy approaches achieve the same goal with different efficiency characteristics.
 
 ### Screenshot
 
@@ -200,25 +165,17 @@ Implementing Borůvka's algorithm provided deep understanding of greedy algorith
 
 ### Selection Criteria
 
-When choosing among these algorithms, practitioners should consider:
-- **Problem requirements:** Are all-pairs shortest paths needed or just an MST?
-- **Graph characteristics:** Is the graph sparse or dense? What is the edge-to-vertex ratio?
-- **Negative weights:** Does the graph contain negative edge weights?
-- **Scale:** How many vertices and edges are present?
+Algorithm selection depends on:
+- **Problem:** Are all-pairs shortest paths or MST needed?
+- **Graph structure:** Sparse or dense? Edge-to-vertex ratio?
+- **Negative weights:** Does the graph contain negative edges?
+- **Scale:** Number of vertices and edges?
 
 ---
 
 ## Conclusion
 
-These three algorithms represent fundamental approaches to graph problems:
-
-1. **Floyd-Warshall** excels at finding shortest paths in small to medium-sized graphs and provides built-in negative cycle detection.
-
-2. **Johnson's algorithm** optimizes for sparse graphs by combining Bellman-Ford's generality with Dijkstra's efficiency through clever reweighting.
-
-3. **Borůvka's algorithm** efficiently computes minimum spanning trees, essential for network design and infrastructure problems.
-
-Each algorithm demonstrates different problem-solving techniques: dynamic programming, algorithm composition, and greedy approaches. Understanding these algorithms provides foundational knowledge for tackling numerous real-world optimization problems across computer science and engineering domains.
+These three algorithms represent distinct approaches to fundamental graph problems. Floyd-Warshall efficiently solves all-pairs shortest paths for small to medium graphs. Johnson's algorithm optimizes for sparse graphs through algorithmic combination. Borůvka's algorithm efficiently constructs minimum spanning trees. Each algorithm demonstrates important design techniques: dynamic programming, algorithm composition, and greedy approaches. Understanding these algorithms provides essential knowledge for solving optimization problems in computer science and engineering.
 
 ---
 
