@@ -8,116 +8,115 @@
 
 ---
 
-## Question 1: STL Containers in C++
+## Question 1 — STL Containers in C++
 
-The assignment wanted me to actually use STL properly—not just declare containers and loop through them like arrays. Three separate challenges: reverse a vector cleanly using iterators, track a deque's state through multiple push and pop operations, and sum an array using STL functions instead of a manual loop.
+### What the problem is asking
 
-### What I Actually Did
+This question required me to actually use the STL properly—not just declare containers and loop through them like plain arrays. Three separate parts: reverse a vector using iterators, simulate push/pop operations on a deque while tracking its state at each step, and compute the sum of a fixed-size std::array using std::accumulate instead of a manual loop.
 
-Part (a) was straightforward. I threw N integers into a vector, then used `rbegin()` and `rend()` to iterate backwards. Could've used a reverse index loop—would've been faster to write—but the whole point was showing I know STL idioms. When I ran it with {10, 20, 30, 40, 50}, it spit out 50 40 30 20 10. Exactly right. O(N) time, O(N) space for storing the vector.
+### How I approached each part
 
-Part (b) actually made me think. A deque supports O(1) insertions at both ends, which is literally why you'd use it instead of a vector. I ran seven operations in sequence: push_back(10), push_back(20), push_front(5), push_front(1), pop_front(), push_back(30), pop_front(). Watching the deque at each step was illuminating. The 1 got removed first, then the 5—confirming FIFO from the front. Final state: [10, 20, 30]. Each operation is O(1). The tracking itself is O(N) space.
+For part (a), I stored N integers into a std::vector and then used `rbegin()` and `rend()` — the reverse iterators — to print the elements backwards. I could have used a reverse index loop, but the point was to use STL idioms, so rbegin()/rend() was the right call. Input: {10, 20, 30, 40, 50}. Output came out as 50 40 30 20 10, which is exactly what I expected.
 
-Part (c) was the one that almost tripped me. std::accumulate lives in `<numeric>`, not `<algorithm>`. I declared `array<int,6> = {3, 7, 1, 9, 4, 6}` and called `accumulate(arr.begin(), arr.end(), 0)`. Returned 30. What's interesting about array is that the size is baked in at compile time—no dynamic allocation overhead. O(N) time to sum, O(1) space since size is fixed.
+Part (b) was the most interesting to trace. A std::deque supports O(1) insertions at both ends, which is the whole reason you'd pick it over a vector. I ran seven operations in sequence — push_back(10), push_back(20), push_front(5), push_front(1), pop_front(), push_back(30), pop_front() — and printed the deque state after every single one. Watching 1 get removed first, then 5, confirmed the FIFO behavior from the front. The final deque was [10, 20, 30].
 
-### Key Complexity Numbers
+Part (c) was straightforward once I remembered that std::accumulate lives in `<numeric>`, not `<algorithm>`. I declared a std::array<int,6> = {3, 7, 1, 9, 4, 6} and called accumulate(arr.begin(), arr.end(), 0). It returned 30. The interesting thing here is that the size is baked in at compile time — no dynamic allocation, no overhead.
 
-| Operation | Time | Space |
-|-----------|------|-------|
-| Vector reverse iteration | O(N) | O(N) storage |
-| Deque operations (each) | O(1) | O(N) total |
-| Array sum via accumulate | O(N) | O(1) fixed |
+### Time and Space
 
-### What I Learned
+| Part | Operation | Time | Space |
+|------|-----------|------|-------|
+| (a) | Vector reverse iteration | O(N) | O(N) |
+| (b) | Deque operations (each) | O(1) per op | O(N) total |
+| (c) | Array sum via accumulate | O(N) | O(1) fixed |
 
-The reverse iterator syntax felt weird at first. I kept wanting to just write a for loop counting down. But once I saw how cleanly `rbegin()/rend()` reads in actual code, it made sense. It's more intention-revealing—you're not manually managing indices, you're just saying "iterate backwards." Another thing: understanding that deque maintains O(1) at both ends but vector doesn't changed how I think about container selection. Use vector when you mostly access and modify the end. Use deque when you're beating on both sides. Use array when the size never changes. Right tool, right job.
+### What I took away
 
-### Output Screenshot
+Honestly, using reverse iterators felt unnatural at first — I kept wanting to just write a for loop counting down. But once I saw how cleanly rbegin()/rend() reads, it made sense. The deque state trace was a good exercise too; it forced me to think about which end was being modified at each step rather than just trusting the output.
+
+### Output
+
 
 ![alt text](Assignment_1/Q1.png)
 
 ---
 
-## Question 2: Bellman-Ford Algorithm
+## Question 2 — Bellman-Ford Algorithm
 
-### Problem Summary
-Given a directed graph with V vertices, E edges (weights may be negative):
-- Compute shortest paths from a source vertex to all other vertices
-- Detect the presence of negative weight cycles
-- Output the final shortest distance table
+### What the problem is asking
 
-**Constraint**: V ≤ 1000, E ≤ 10000 (implied by typical problem bounds)
+Given a directed graph with V vertices and E edges — where some edge weights can be negative — find the shortest distance from a chosen source vertex to every other vertex. Also detect if a negative weight cycle exists, because if it does, the concept of a shortest path breaks down entirely.
 
-### Algorithm Explanation
+### How the algorithm works
 
-**Core Concept**: Relaxation-based shortest path algorithm
+The core idea is to relax every edge, repeatedly, V-1 times. After k passes, you are guaranteed to have found the shortest path using at most k edges. Since any valid shortest path in a graph with no negative cycle can use at most V-1 edges, V-1 passes is always enough. The tricky part — and the part I found most satisfying — is the detection step: if you do one more (the Vth) pass and any edge can still be relaxed, that means there is a negative cycle somewhere. Distances are still shrinking, which means they would shrink forever.
 
-The Bellman-Ford algorithm works by iteratively relaxing edges:
-- **Relaxation**: If `dist[u] + weight(u,v) < dist[v]`, update `dist[v]`
-- **Key Principle**: After k passes, all shortest paths using ≤ k edges are found
-- **Why V-1 passes?**: Any shortest path without cycles uses at most V-1 edges
+### How I coded it
 
-**Negative Cycle Detection**:
-- If a Vth pass still relaxes any edge → negative cycle exists
-- Indicates distances are still decreasing → would decrease forever if continued
+I stored all edges in a flat `vector<Edge>` with fields u, v, w. Distances were initialised to INT_MAX for all vertices except the source, which starts at 0. The outer loop runs V-1 times, the inner loop scans every edge. One important thing: I guarded against integer overflow by checking `dist[e.u] != INT_MAX` before attempting relaxation — without that guard, adding any weight to INT_MAX wraps around to a negative number and breaks everything. After the main loop, one final scan checks if any edge still reduces a distance. If yes, I print the negative cycle warning instead of the distance table.
 
-### How I Coded It
+I also converted user input from 1-indexed to 0-indexed internally. That tripped me up once during testing when vertex 1 was mapping to index 1 instead of 0, and the source row was showing INF instead of 0.
 
-I stored all edges in a `vector<Edge>` where each edge has u, v, w (from, to, weight). This flat structure makes iteration clean. Initialization was straightforward: `dist[src] = 0`, everything else = INT_MAX. Then the main loop: V-1 times, scan every edge. For each edge, check if relaxation is possible.
+### Time and Space
 
-The guard is everything: `if (dist[e.u] != INT_MAX && dist[e.u] + e.w < dist[e.v])`. Skip that check and INT_MAX + anything overflows to a negative number. Spent 20 minutes debugging that. After V-1 passes, I scan edges one final time—if anything relaxes, negative cycle exists.\n
-The input was 1-indexed but distances array was 0-indexed. Converting vertex 1 to index 0 fixed a bug where vertex 1 showed INF instead of 0. Easy to miss.
+**Time Complexity**
+- O(V × E) — V-1 relaxation passes, each scanning all E edges
+- Negative cycle check: O(E) extra pass
 
-**Complexity Breakdown**
+**Space Complexity**
+- O(V + E) — dist[] array of size V, edge list of size E
 
-O(V × E) time: V-1 relaxation passes scanning all E edges, plus O(E) cycle check. Space is O(V + E)—distance array plus edge list. Dijkstra hits O((V + E) log V) but demands non-negative weights. Bellman-Ford trades speed for generality.\n
-**What Stuck With Me**
+### What I took away
 
-The algorithm is conceptually boring—relax edges repeatedly. But that simplicity is powerful. Cycle detection comes nearly free. The overflow bug? Painful at the time but unforgettable. INT_MAX is dangerous. Use 1e9 instead. Dense graphs destroy this algorithm (E near V² makes it O(V³)), so Dijkstra wins there. For sparse graphs, Bellman-Ford doesn't apologize.
+Bellman-Ford is slower than Dijkstra — O(VE) vs O((V+E) log V) — but Dijkstra simply does not work with negative weights. The tradeoff is clear. What I found interesting is that the detection is basically free: you've already done the hard work in V-1 passes, and one extra scan is all it takes to know whether your answers are valid or not. That feels like a clever design.
 
-### Output Screenshot (No Negative Cycle)
+### Output — Test 1: No Negative Cycle (5 vertices, 8 edges, source = 1)
+Shortest distances from vertex 1
 
 ![alt text](Assignment_1/Q2.png)
 
-### Output Screenshot (Negative Cycle Detected)
+### Output — Test 2: Negative Cycle Detected (3 vertices, cycle 1->2->3->1)
+
+*** Negative weight cycle detected! Shortest paths are undefined. ***
 
 ![alt text](Assignment_1/Q2_negative.png)
 
 ---
 
-## Question 3: Floyd-Warshall Algorithm
+## Question 3 — Floyd-Warshall Algorithm
 
-All-pairs shortest paths: compute every distance between every vertex pair. Needs to work with negative weights, detect negative cycles, print the distance matrix. Sounds simple enough.
+### What the problem is asking
 
-### The Actual Algorithm
+Compute shortest paths between every pair of vertices in a directed weighted graph — all-pairs, not just from one source. Negative weights are allowed. Also detect negative cycles, and print the full V×V distance matrix at the end.
 
-Three nested loops. That's it. For each intermediate vertex k, check if routing through it beats the current best. The recurrence is `dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j])`. Simple.
+### How the algorithm works
 
-What makes this work with negative weights? No greedy assumptions. Dijkstra assumes everything's non-negative so it can bail early. Floyd-Warshall doesn't care. A weight of -4? Just means routing that way saves 4 units. DP handles it naturally.
+Floyd-Warshall is a dynamic programming algorithm. The recurrence is: `dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j])`. For each intermediate vertex k, you ask: is going through k cheaper than the current best path from i to j? You iterate k from 0 to V-1 in the outermost loop, and that ordering is what makes the DP correct — by the time you consider k as an intermediate vertex, all shorter sub-paths through earlier vertices have already been computed.
 
-Negative cycles break everything. Let me think through this. If I have a cycle with total weight -10, I can keep looping and make my path cost drop forever. The algorithm detects it by checking if the diagonal goes negative: if `dist[i][i] < 0`, then vertex i is part of a cycle. That check caught the bug.
+### How I coded it
 
-### Implementation Reality
+The distance matrix starts with `dist[i][i] = 0`, known edge weights at their respective cells, and INF everywhere else. I used 1e9 as INF rather than INT_MAX — adding two INT_MAX values together causes overflow, which I learned the hard way in an earlier version that was producing garbage in some cells. After the three nested loops finish, I check the diagonal: if `dist[i][i] < 0` for any vertex i, then i is on a negative cycle. That check cost me some time to figure out — it is not obvious until you think about what it means for a vertex to have a shorter path to itself than zero.
 
-Initialization: `dist[i][i] = 0`, actual edge weights go in their spots, everything else is INF. Here's the trap: **use 1e9 as INF, not INT_MAX**. INT_MAX + INT_MAX overflows. Spent an hour on that bug. With 1e9, adding two values gives 2e9 which is safely under INT_MAX.
+Printing the matrix was surprisingly fiddly. Getting the column alignment right with `setw()` took a few tries, especially when some values were INF and some were multi-digit negative numbers.
 
-The three nested loops run V times each: k, i, j. Before adding, I check `if dist[i][k] < INF and dist[k][j] < INF`. Otherwise overflow hits again.
+### Why it handles negative weights but breaks on negative cycles
 
-After all loops finish, scan the diagonal. Any negative value means a cycle. The matrix output needed `setw()` for alignment—took more debugging than the actual algorithm.
+Negative edge weights are fine because the DP just treats them as cheaper routes. A weight of -4 on edge (1, 4) simply means going via that edge saves 4 units of cost — the recurrence handles that naturally, no special casing required. Negative cycles are a different problem entirely. If you can loop around a cycle whose total weight is negative, you can keep going around it indefinitely and make the path cost approach negative infinity. There is no finite answer. The algorithm detects this when `dist[i][i]` goes below 0, but it cannot produce correct distances for any vertex reachable from that cycle.
 
-### Numbers That Matter
+### Time and Space
 
-O(V³) time. For V=1000, that's literally 1 billion operations. O(V²) space for the matrix. Running Dijkstra V times with a heap hits O(V × (V+E) log V). For dense graphs, Floyd-Warshall wins. For sparse? Dijkstra from each source destroys it.
+**Time Complexity**
+- O(V³) — three nested loops, each running V times
 
-When V < 500, O(V³) is fine. Beyond that, density matters.
+**Space Complexity**
+- O(V²) — the full distance matrix
+- Negative cycle check: O(V) diagonal scan after the main loops finish
 
-### What I Realized
+### What I took away
 
-The algorithm is almost boring in its simplicity. Three loops, one comparison. But that boring simplicity is powerful. You get an answer with zero doubt about correctness. The negative cycle detection costs almost nothing—just a diagonal scan.
+Floyd-Warshall is simple to write — just three nested loops and a recurrence — but O(V³) adds up fast. For V=1000, that is a billion operations. It is the right tool when the graph is dense and you genuinely need all pairs. For sparse graphs, running Dijkstra from each vertex beats it easily. The 1e9 vs INT_MAX issue is the kind of bug that is invisible until a specific edge combination triggers it, so it is worth remembering.
 
-Presentation actually matters. An unaligned matrix is impossible to verify by hand. Learned that the hard way. The math is clean but the implementation required more careful formatting than I expected.
-
-### Output Screenshot
+### Output (4 vertices, 5 edges)
 
 ![alt text](Assignment_1/Q3.png)
 
@@ -128,142 +127,134 @@ Presentation actually matters. An unaligned matrix is impossible to verify by ha
 
 ---
 
-## Question 1: Bitmasking - Subset Generation & Divisibility Count
+## Question 1 — Bitmasking and Subset Generation
 
-Given N integers (N ≤ 20) and divisor K, generate all subsets and count how many have sums divisible by K. The constraint N ≤ 20 is the whole story—that's 2^20 ≈ 1 million subsets. Doable. 2^25 would kill the runtime.
+### What the problem is asking
 
-### How Bitmasking Works
+Given a set of at most 20 integers and a divisor K, generate every possible subset using bitmask enumeration, then count how many of those subsets have a sum exactly divisible by K.
 
-Each integer from 0 to (2^N - 1) encodes one subset. Bit i being set means arr[i] is included. Mask=5 in binary is 101, so take arr[0] and arr[2]. Mask=0 is the empty set. Mask=15 with N=4 gives all four elements. It's a one-to-one mapping.
+### How the algorithm works
 
-No recursion needed, so no stack overhead. The ordering is deterministic. You iterate and pick subsets in increasing mask order. Makes debugging easy because the output is reproducible.
+For N elements, there are exactly 2^N subsets. If I iterate an integer mask from 0 to (2^N - 1), each value of mask is a unique N-bit number where bit i being set means element arr[i] is included in that subset. So mask = 0 is the empty set, mask = 1 is just the first element, mask = 3 (binary 011) is the first two elements together, and so on. It is a clean one-to-one mapping between integers and subsets.
 
-### What I Actually Coded
+### How I coded it
 
-Outer loop: mask goes 0 to (2^N - 1). Inner loop: check bits 0 to N-1. For bit i, test `(mask & (1 << i))`. If true, add arr[i] to the current subset and add its value to sum. Then check `sum % K == 0` and increment the counter if true.
+The outer loop runs from mask = 0 to (1 << N) - 1. For each mask, an inner loop checks each bit position i using `(mask & (1 << i))`. If that bit is set, arr[i] goes into the current subset and its value is added to sum. After building the subset, I check `sum % K == 0` and increment a counter if true.
 
-Testing with N=4, arr={1,2,3,4}, K=3: got 16 total subsets (correct: 2^4). Counted 6 with sum divisible by 3. Verified by hand: {}, {3}, {1,2}, {1,2,3}, {2,4}, {2,3,4}. All check out.
+Testing with N=4, arr={1,2,3,4}, K=3 gave 16 total subsets and 6 divisible by K=3. I verified those 6 by hand: {}, {1,2}, {3}, {1,2,3}, {2,4}, {2,3,4} — they all check out. The constraint N ≤ 20 keeps this tractable: 2^20 is about 1 million iterations, each doing at most 20 bit checks. That is around 20 million operations. Fast enough.
 
-### Why N ≤ 20 Is The Line
+### Time and Space
 
-2^20 = 1,048,576 subsets. 20 bit checks per subset. Roughly 20 million operations. CPU crushes that. 2^25 hits 30+ million operations. At that point? Nope. Too slow. That's when you switch to DP: track `dp[i][r]` = "how many subsets of first i elements have sum % K = r". That's O(N × K) which beats 2^N for large N.
+**Time Complexity**
+- O(2^N × N) — 2^N masks, N bit checks each
 
-The constraint exists exactly to make bitmask the intended solution. Clever constraint design.
+**Space Complexity**
+- O(N) — temporary storage for current subset
 
-### The Learning
+**N = 20 upper bound**
+- ~20 million operations — well within limits
 
-Bit manipulation is genuinely elegant. Each integer is a compact encoding of set membership. Operations like `1 << i` and `mask & (1 << i)` are single CPU instructions. The algorithm is O(2^N × N) which sounds exponential—it is—but for N ≤ 20 it's manageable.
+### What I took away
 
-Understanding binary representation has downstream value. It shows up in dynamic programming optimization, graph algorithms as bitmasks for visited sets, and even in ML for feature selection. This problem teaches that binary is not just for storing numbers; it's a way of thinking about membership and combinations.
+The bit trick is genuinely elegant. No recursion, no explicit stack — just integers and bit manipulation. For N > 20 this approach would be too slow; you'd want a DP over remainders instead, tracking counts mod K. But for N ≤ 20, the bitmask approach is clean and easy to reason about.
 
-### Output Screenshot
+### Output (N=4, arr={1,2,3,4}, K=3)
 
 ![alt text](Assignment_2/A2_Q1.png)
 
 ---
 
-## Question 2: Johnson's Algorithm - Why It Crushes Floyd-Warshall on Sparse Graphs
+## Question 2 — Johnson's Algorithm
 
-### The Problem It Solves
+### What the problem is asking
 
-All-pairs shortest paths when edges have negative weights but no negative cycles. Floyd-Warshall is O(V³). Johnson's is O(V²log V + VE). For sparse graphs? Johnson dominates. Let me show the math.
+Explain why Johnson's algorithm is more efficient than Floyd-Warshall for sparse graphs, and describe what edge reweighting does and why Bellman-Ford is used as part of the setup.
 
-Take V=1000, E=5000 (sparse). Floyd-Warshall: 1000³ = 1 billion operations. Johnson's: 1000² × log(1000) + 1000 × 5000 ≈ 10 million operations. **100× faster**. That's not theoretical; that's real.
+### The efficiency gap
 
-### How Johnson Pulls It Off
+Floyd-Warshall always runs O(V³) regardless of how many edges the graph has. Johnson's runs O(V² log V + VE) by running Dijkstra once per vertex. For a sparse graph — say V=1000 and E=5000 — Floyd-Warshall does roughly 10^9 operations, while Johnson's does something closer to 10^7. That is two orders of magnitude. The crossover point where Floyd-Warshall becomes competitive is when E approaches V², i.e., dense graphs. For sparse graphs, Johnson's wins every time.
 
-Add a dummy source vertex s with zero-cost edges to every vertex. Run Bellman-Ford from s to get potentials h[v] = shortest distance from s to v. These potentials are the trick.
+### Why edge reweighting is needed
 
-Reweight every edge: new_weight(u,v) = old_weight(u,v) + h[u] - h[v]. This transformation makes all weights non-negative. Run Dijkstra V times, one from each vertex. Final distances get adjusted back.
+Dijkstra does not work with negative edge weights. So Johnson's first transforms the graph to remove all negative edges while preserving which paths are shortest. Here is how: a new dummy vertex s is added with zero-weight edges to every other vertex. Bellman-Ford runs from s to compute a potential h[v] for each vertex — the shortest distance from s to v. Then every edge weight is transformed as w'(u,v) = w(u,v) + h[u] - h[v]. This transformation is guaranteed to make all weights non-negative. After Dijkstra runs on the reweighted graph, the true distances are recovered by reversing the transformation.
 
-The reweighting works because the adjustment cancels when you sum along any path. h[u] gets added, then h[v] gets subtracted. On a complete path A→B→C, the h values eliminate and you get the true relative ordering back.
+The reason Bellman-Ford specifically is used here is that the original graph may have negative weights — Dijkstra can't compute the potentials h[v] on the original graph. Bellman-Ford handles negatives. It also detects if a negative cycle exists, in which case the whole algorithm aborts early because all-pairs shortest paths are undefined.
 
-### Why Bellman-Ford Specifically?
+### Complexity summary
 
-Dijkstra dies on negative weights. Johnson uses Bellman-Ford to build the potentials h[v] because Bellman-Ford handles negatives. It also detects if a negative cycle exists—if one does, the whole algorithm aborts because all-pairs shortest paths don't exist.
+**Floyd-Warshall**
+- O(V³) — always, regardless of density
 
-That detection is free. One extra pass. If anything relaxes, cycle detected. Clean.
+**Johnson's**
+- O(VE + V² log V) — with binary heap Dijkstra
 
-### The Trade-off
-
-Floyd-Warshall is always O(V³). Doesn't matter if you have 10 edges or V² edges. Johnson cares about E. When E is tiny compared to V², Johnson wins hard. When E approaches V², the gap closes. At E = V², they're comparable. For dense graphs, Floyd-Warshall's simplicity and cache locality sometimes beat Johnson despite the worse complexity.
-
-The real insight? Don't use the all-pairs algorithm blindly. Look at density. Make the algorithmic choice data-driven.
-
----
-
-## Question 3: Arbitrage Detection via Currency Exchange
-
-### The Real Problem
-
-Currencies form a graph. Vertices are currencies. An edge from USD to EUR with weight 1.1 means 1 unit of USD becomes 1.1 units of EUR. Want to find arbitrage: a cycle where you start with 1 unit, make exchanges, and end up with more than 1 unit. Cycle with product of rates > 1.
-
-Example: USD → EUR (×1.1) → GBP (×1.2) → USD (×0.95). Product: 1.1 × 1.2 × 0.95 = 1.254. You turned 1 USD into 1.254 USD. That's profit from nothing. Illegal but the math is clean.
-
-### The Trick: Logarithms
-
-Multiplicative problems are hard in graph algorithms. Everything assumes sums. The fix: take negative logarithm of exchange rates.
-
-r₁ × r₂ × ... × rₖ > 1 becomes log(r₁) + log(r₂) + ... + log(rₖ) > 0 becomes -log(r₁) - log(r₂) - ... - log(rₖ) < 0.
-
-Bam. Multiplicative problem is now additive.
-
-Edge weights are w(u,v) = -log(rate(u,v)). A cycle with product > 1 is now a cycle with sum < 0 (negative cycle).
-
-### Implementation
-
-Read currency pairs and rates. Compute w(u,v) = -log(rate(u,v)). Run Bellman-Ford from any vertex. If a Vth pass relaxes any edge, arbitrage exists. That edge is part of the profitable cycle.
-
-Why Bellman-Ford? The reweighted graph has negative edges (log of rates < 1 gives negative logs, and we negated them). Dijkstra chokes. Floyd-Warshall works but O(V³) for a currency graph is overkill. Bellman-Ford is O(VE), detects cycles, and handles the negative weights naturally.
-
-### What Stands Out
-
-This problem teaches something deeper. Hard-looking problems sometimes transform into known problems with the right math. Currency arbitrage looked domain-specific and complex. After the log transformation, it's just negative cycle detection. Same idea shows up in chess puzzles, chemical kinetics, financial derivatives—if a quantity is multiplicative on a path, take its logarithm and suddenly you have an additive problem solvable by standard algorithms.
-
-Makes you think differently about problem-solving. Always ask: can I transform this into something simpler?
+**Verdict**
+- Johnson's is better when E << V² (sparse graphs)
 
 ---
 
-## Question 4: Edmonds' Algorithm - Problem Definition
+## Question 3 — Arbitrage Detection in Currency Exchange
 
-### What Problem Does It Actually Solve?
+### What the problem is asking
 
-**Minimum Spanning Arborescence (directed minimal spanning tree)**. Given a directed weighted graph and a root vertex r, find a minimum-weight spanning tree where edges point *toward* the root. Every non-root vertex has exactly one incoming edge. All vertices reachable from the root.
+Model a currency exchange network as a graph, show how log-transformation converts the multiplicative problem into an additive one, and identify the right algorithm to detect arbitrage.
 
-It's the directed version of MST. But the constraint changes everything. In an undirected MST, you pick a cycle-free set of edges. Here, you force a specific structure: one incoming edge per non-root vertex, pointing inward toward the root.
+### The graph model
 
-### Why It's Different From MST
+Each currency is a vertex. A directed edge from currency A to currency B has weight equal to the exchange rate r(A→B). An arbitrage opportunity exists when you can start with 1 unit of some currency, make a sequence of exchanges, and end up with more than 1 unit of the same currency. That means the product of exchange rates along that cycle is greater than 1.
 
-Minimum Spanning Tree: undirected, no root, try to minimize total weight. Minimum Spanning Arborescence: directed, rooted structure, minimize weight with directional constraints. Same goal (minimal weight), completely different structure.
+### The log trick
 
-### The Algorithm Idea
+Products are awkward to work with in graph algorithms — everything is built around sums. The fix is to take the negative logarithm of each exchange rate and use that as the edge weight. Since log(r₁ × r₂ × ... × rₖ) = log(r₁) + log(r₂) + ... + log(rₖ), a cycle where the product of rates exceeds 1 becomes a cycle where the sum of log(rate) values is positive, which becomes a cycle where the sum of -log(rate) values is negative. An arbitrage opportunity is now exactly a negative weight cycle. The problem is transformed completely.
 
-For each non-root vertex, pick its minimum incoming edge. If no cycles form, done. If cycles exist, contract each cycle into a single node, recursively solve on the contracted graph, then expand back and resolve ties in the contracted edges.
+### Algorithm: Bellman-Ford
 
-This sounds greedy and wrong. But it works. The cycle contraction mechanism is what preserves optimality globally despite local greedy choices. Counterintuitive but proven.
-
-### Key Insight
-
-In an optimal arborescence, if a non-root vertex v doesn't have its minimum incoming edge selected, you can swap it in without losing optimality. That property makes greedy selection locally correct.
-
-Complexity hits O(VE) naively, optimized to O(E log V) with data structures. Way slower than MST (O(E log E)), but directed graphs need it.
-
-### The Learning
-
-Edmonds' teaches that different problem variants need different solutions. Adding direction changes everything. The algorithm's elegance is in cycle contraction: instead of forbidding cycles outright, embrace them, contract them, and handle them recursively. It's almost beautiful if you squint at the pseudocode long enough.
+Bellman-Ford is the right choice here because the graph now has negative edge weights (since log of rates less than 1 is negative, and we are negating). Dijkstra is out. Floyd-Warshall would work but is O(V³) — for a currency graph with dozens of currencies, Bellman-Ford at O(VE) is faster. The detection is the same as in Question 2: if a Vth relaxation pass still improves any distance, a negative cycle exists, meaning an arbitrage opportunity has been found.
 
 ---
 
-## Question 5: String Matching - KMP and Rabin-Karp
+## Question 4 — Edmonds' Algorithm
 
-### Compute the LPS Array
+### The problem it solves
 
-Part (a): Build the LPS (Longest Prefix Suffix) array for "ABABCABAB". The LPS at position i tells you: "what's the longest proper prefix of pattern[0..i] that's also a suffix?" Proper means not the whole string.
+Edmonds' algorithm (also called the Chu-Liu/Edmonds' algorithm) solves the Minimum Spanning Arborescence problem. Given a directed weighted graph G = (V, E) and a designated root vertex r, find a minimum-weight spanning arborescence — a directed spanning tree rooted at r where there is exactly one directed path from r to every other vertex. Every non-root vertex has exactly one incoming edge in the solution.
 
-For "ABABCABAB":
-- Position 0: "A" has no proper prefix. LPS[0] = 0.
-- Position 3: "ABAB" → prefix "AB" matches suffix "AB". LPS[3] = 2.
-- Position 8: "ABABCABAB" → prefix "ABAB" matches suffix "ABAB". LPS[8] = 4.
+### Why it's different from MST
+
+This is not the same as a minimum spanning tree. MST algorithms like Kruskal's and Prim's work on undirected graphs. Edge direction matters here — an edge (u, v) can be in the arborescence but (v, u) cannot be substituted for it. The algorithm handles this by greedily selecting the cheapest incoming edge for each non-root vertex, detecting and contracting cycles (since a cycle means no unique path from root to some vertex exists), and recursing on the contracted graph.
+
+### Algorithm overview
+
+For each non-root vertex, pick its minimum incoming edge. If no cycles form, done. If cycles exist, contract each cycle into a single node, recursively solve on the contracted graph, then expand back and resolve ties in the contracted edges. This sounds greedy and wrong. But it works. The cycle contraction mechanism is what preserves optimality globally despite local greedy choices.
+
+### Complexity
+
+**Naive implementation**
+- O(VE)
+
+**With priority queues**
+- O(E log V)
+
+### Input and Output
+
+**Input**: Directed weighted graph G = (V, E), root r  
+**Output**: Minimum-weight directed spanning tree rooted at r
+
+---
+
+## Question 5 — String Matching: KMP and Rabin-Karp
+
+### What the problem is asking
+
+Two parts: compute the LPS (Longest Prefix Suffix) array for the pattern "ABABCABAB" as required by KMP, and explain how Rabin-Karp handles hash collisions along with its average and worst-case time complexities.
+
+### Part (a) — KMP and the LPS Array
+
+The LPS array is what makes KMP fast. At each index i, LPS[i] stores the length of the longest proper prefix of pattern[0..i] that is also a suffix of pattern[0..i]. When a mismatch occurs during matching, instead of restarting the pattern from index 0, you jump to lps[j-1] — reusing the prefix you already matched. This is how KMP avoids re-scanning characters and achieves O(N+M) instead of the naive O(N×M).
+
+Computing LPS for "ABABCABAB" took me a moment to get right, especially around index 4 where the 'C' breaks the prefix match and the value resets to 0 before building back up again.
+
+#### LPS Array — Step by Step
 
 | Index | Char | Substring | Best Prefix-Suffix Match | LPS |
 |-------|------|-----------|--------------------------|-----|
@@ -277,48 +268,35 @@ For "ABABCABAB":
 | 7 | A | ABABCABA | "ABA" matches "ABA" | 3 |
 | 8 | B | ABABCABAB | "ABAB" matches "ABAB" | 4 |
 
-Final LPS array: [0, 0, 1, 2, 0, 1, 2, 3, 4]
+**Final LPS array: [0, 0, 1, 2, 0, 1, 2, 3, 4]**
 
-Why does this matter? When the pattern fails to match at position j, instead of restarting from 0, jump to LPS[j-1]. Saves re-checking characters you already know match. That jump is what makes KMP O(N+M) instead of O(N×M).
+Running KMP search with this LPS array on text "ABABCABABABABCABAB" found pattern matches at indices 0 and 9. No wasted comparisons.
 
-Building the LPS takes two pointers: one for the current position (i) and one for the length of the matching prefix (len). When pattern[i] == pattern[len], increment len and set LPS[i] = len. When they don't match, fallback to LPS[len-1]. This fallback chain is what makes it work.
+### Part (b) — Rabin-Karp Collisions and Complexity
 
-### Rabin-Karp: Hashing Instead of Direct Comparison
+Rabin-Karp computes a hash of the pattern and a hash of each length-M window in the text using a rolling hash. When the two hashes match, it could be a real match — or it could be a collision, two different strings that happen to hash to the same value. To handle that, Rabin-Karp does a character-by-character verification whenever hashes agree. This guarantees correctness at the cost of O(M) work per collision.
 
-Instead of comparing characters, use a polynomial rolling hash. hash(s) = (s[0]×BASE^m + s[1]×BASE^(m-1) + ... + s[m-1]) mod MOD. Use BASE=31 for letters, MOD=10^9+9 (big prime).
+In my implementation I used a polynomial hash with BASE = 31 and MOD = 10^9 + 9. With a modulus that large, the probability of any given window producing a spurious hash match is roughly 1/(10^9 + 9). Collisions are rare in practice.
 
-When you shift the window, update the hash in O(1): new_hash = (old_hash - s[i]×BASE^(m-1)) × BASE + s[i+m]. That's the "rolling" part. You're not recomputing the whole hash; you're adjusting it.
+#### Time Complexity Numbers
 
-### Collision Handling: The Catch
-
-Hash values collide sometimes. Two different strings hash to the same value. Solution: when hashes match, do a full character-by-character verification. If the strings don't actually match, it's a spurious collision. Move on.
-
-With MOD = 10^9+9, collision probability per window ≈ 1/(10^9+9). Tiny. In practice, this almost never happens, so Rabin-Karp runs O(N+M) on average. Worst case with many collisions? O(N×M).
-
-### Time Complexity Numbers
-
-**KMP**:
-- Always O(N+M). No randomness. No worst case.
+**KMP**
+- Always O(N+M) — no randomness, no worst case
 - Building LPS: O(M)
 - Searching: O(N)
-- Total: O(N+M)
 
-**Rabin-Karp**:
-- Average: O(N+M) (hashing fast, collisions rare)
-- Worst: O(N×M) (every window causes collision, forces verification)
-- Best: O(N+M) (no hash matches except real ones)
+**Rabin-Karp**
+- Average: O(N+M) — rolling hash updates in O(1), verification rarely triggered
+- Worst: O(N×M) — every window triggers a hash collision, each needing full O(M) verify
+- Best use case: Searching for multiple patterns at once — hash all k patterns, one pass over text: O(N+kM)
 
-### When to Use Which?
+### KMP vs Rabin-Karp
 
-KMP if you need predictable timing. One pattern, guaranteed O(N+M). Rabin-Karp if you have multiple patterns. Hash all k patterns once (O(kM)), scan text once (O(N)), report matches: O(N+kM) total. Running KMP k times would be O(k(N+M)). For many patterns, Rabin-Karp crushes it.
+KMP is always O(N+M). Guaranteed. Rabin-Karp is faster on average and scales well to multiple patterns, but has a degenerate worst case. I would use KMP when I need a predictable runtime, and Rabin-Karp when I am searching for several patterns in one pass.
 
-### What Was Surprising
+The worst case is pathological — it happens when the text is all the same character (e.g., "aaaaaa") and the pattern is also almost all that character (e.g., "aaaab"). Every window hashes the same as the pattern, and every window needs a full verification. In normal text this almost never happens.
 
-Working through the LPS computation by hand felt tedious. But once I saw the fallback chain (using LPS[len-1] when mismatch happens), the elegance clicked. It's not just a lookup table; it's a failure function that lets you reuse computation.
-
-Rabin-Karp felt like a trick initially. Hashing to avoid character comparison seemed... fragile? But the collision handling makes it rigorous. The probability math makes it work. For my code, I tested both on various strings and they found the same matches, which validated the approach.
-
-### Output Screenshot - Part (a): KMP LPS Array
+### Output
 
 ![alt text](Assignment_2/A2_Q5.png)
 
@@ -357,4 +335,3 @@ Algorithms aren't abstract. They have real trade-offs. Floyd-Warshall is O(V³) 
 Most importantly: testing matters. Sample inputs caught bugs immediately. Verify by hand before trusting output.
 
 ---
-
