@@ -1,0 +1,28 @@
+# Compiled binaries
+Q1_STL
+Q2_BellmanFord
+Q3_FloydWarshall
+Q1_Bitmasking
+Q5_StringMatching
+
+# Object files
+*.o
+*.obj
+
+# Executable files
+*.exe
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+
+# IDE files
+.vscode/
+.idea/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
