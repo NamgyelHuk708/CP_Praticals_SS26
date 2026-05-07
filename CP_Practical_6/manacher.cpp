@@ -80,7 +80,7 @@ public:
                 int origPos = (i - 1) / 2;
                 int len = palindromeLength[i];
                 
-                if (origPos >= 0 && origPos < text.length()) {
+                if (origPos >= 0 && origPos < (int)text.length()) {
                     string palindrome = text.substr(origPos, len);
                     
                     // Verify it's actually a palindrome
@@ -110,7 +110,7 @@ public:
         string longest = "";
         int maxLen = 0;
         
-        for (int i = 0; i < expanded.length(); i++) {
+        for (int i = 0; i < (int)expanded.length(); i++) {
             // Remove the '#' to get actual length
             int actualLen = palindromeLength[i];
             

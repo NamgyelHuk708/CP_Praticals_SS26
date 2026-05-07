@@ -73,7 +73,7 @@ public:
     
     // Helper function for delete
     bool deleteHelper(TrieNode* node, string word, int index) {
-        if (index == word.length()) {
+        if (index == (int)word.length()) {
             if (!node->isEndOfWord) {
                 return false;  // Word does not exist
             }

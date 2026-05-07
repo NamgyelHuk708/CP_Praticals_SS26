@@ -27,7 +27,7 @@ private:
     
     // Find bit at position
     int getBit(string& str, int position) {
-        if (position < str.length()) {
+        if (position < (int)str.length()) {
             return (str[position / 8] >> (7 - (position % 8))) & 1;
         }
         return 0;
@@ -64,7 +64,6 @@ public:
         
         cout << "Inserting: " << key << endl;
         PATRICIANode* node = root;
-        int position = 0;
         
         while (!node->isLeaf) {
             int bit = getBit(const_cast<string&>(key), node->edgeLabel);
@@ -123,7 +122,7 @@ public:
     }
     
 private:
-    bool deleteHelper(PATRICIANode* node, const string& key, PATRICIANode* parent) {
+    bool deleteHelper(PATRICIANode* node, const string& key, PATRICIANode* /* parent */) {
         if (node == nullptr) {
             return false;
         }
